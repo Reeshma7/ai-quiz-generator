@@ -1,0 +1,78 @@
+/* ================================
+   GLOBAL RESET
+================================ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    width: 100%;
+    min-height: 100%;
+    overflow-x: hidden;
+}
+
+body {
+    width: 100%;
+    min-height: 100vh;
+
+    margin: 0;
+    padding: 0;
+
+    font-family: Arial, sans-serif;
+
+    background: #f8fafc;
+    color: #0f172a;
+
+    overflow-x: hidden;
+}
+
+#root {
+    width: 100%;
+    min-height: 100vh;
+
+    margin: 0;
+    padding: 0;
+
+    /* IMPORTANT:
+       Do not use max-width here.
+       Do not use width: 1126px.
+       Do not use text-align: center.
+    */
+
+    box-sizing: border-box;
+}
+
+
+/* ================================
+   GLOBAL ELEMENTS
+================================ */
+
+button,
+input,
+select,
+textarea {
+    font-family: inherit;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+a {
+    text-decoration: none;
+}
+
+
+/* ================================
+   PREVENT HORIZONTAL OVERFLOW
+================================ */
+
+html,
+body,
+#root {
+    max-width: 100%;
+}
