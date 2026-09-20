@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
+import API from "../services/api";
 import "../styles/Auth.css";
 
 function Register() {
@@ -19,10 +19,8 @@ function Register() {
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
     const [loading, setLoading] = useState(false);
-
     const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] =
-        useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const handleChange = (e) => {
         setFormData({
@@ -68,10 +66,9 @@ function Register() {
         }
 
         // Email validation
-        const emailRegex =
-            /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-        if (!emailRegex.test(email)) {
+        if (!emailRegex.test(email.trim())) {
             return "Please enter a valid email address.";
         }
 
@@ -81,10 +78,11 @@ function Register() {
         }
 
         // Date validation
-        const selectedDate = new Date(dateOfBirth);
+        const selectedDate = new Date(`${dateOfBirth}T00:00:00`);
         const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
-        if (selectedDate >= today) {
+        if (Number.isNaN(selectedDate.getTime()) || selectedDate >= today) {
             return "Date of birth must be in the past.";
         }
 
@@ -137,21 +135,18 @@ function Register() {
         try {
             setLoading(true);
 
-            const response = await axios.post(
-                "http://localhost:5000/api/auth/register",
-                {
-                    name: formData.name.trim(),
-                    email: formData.email.trim().toLowerCase(),
-                    phone: formData.phone,
-                    dateOfBirth: formData.dateOfBirth,
-                    gender: formData.gender,
-                    password: formData.password
-                }
-            );
+            // Register using the shared API configuration
+            const response = await API.post("/auth/register", {
+                name: formData.name.trim(),
+                email: formData.email.trim().toLowerCase(),
+                phone: formData.phone,
+                dateOfBirth: formData.dateOfBirth,
+                gender: formData.gender,
+                password: formData.password
+            });
 
             setSuccess(
-                response.data.message ||
-                "Registration successful!"
+                response.data.message || "Registration successful!"
             );
 
             // Clear form
@@ -169,8 +164,9 @@ function Register() {
             setTimeout(() => {
                 navigate("/login");
             }, 1500);
-
         } catch (error) {
+            console.error("Registration error:", error);
+
             setError(
                 error.response?.data?.message ||
                 "Registration failed. Please try again."
@@ -182,7 +178,6 @@ function Register() {
 
     return (
         <div className="auth-page">
-
             {/* Background */}
             <div className="auth-background">
                 <div className="auth-glow auth-glow-one"></div>
@@ -191,13 +186,10 @@ function Register() {
 
             {/* Container */}
             <div className="auth-container">
-
                 {/* Card */}
                 <div className="auth-card">
-
                     {/* Header */}
                     <div className="auth-header">
-
                         <div className="auth-logo">
                             🧠
                         </div>
@@ -214,7 +206,6 @@ function Register() {
                             Create your account and start
                             your personalized quiz journey.
                         </p>
-
                     </div>
 
                     {/* Error */}
@@ -233,10 +224,8 @@ function Register() {
 
                     {/* Form */}
                     <form onSubmit={handleSubmit}>
-
                         {/* Name */}
                         <div className="auth-form-group">
-
                             <label htmlFor="name">
                                 Full Name
                             </label>
@@ -249,12 +238,10 @@ function Register() {
                                 value={formData.name}
                                 onChange={handleChange}
                             />
-
                         </div>
 
                         {/* Email */}
                         <div className="auth-form-group">
-
                             <label htmlFor="email">
                                 Email Address
                             </label>
@@ -267,12 +254,10 @@ function Register() {
                                 value={formData.email}
                                 onChange={handleChange}
                             />
-
                         </div>
 
                         {/* Phone */}
                         <div className="auth-form-group">
-
                             <label htmlFor="phone">
                                 Phone Number
                             </label>
@@ -284,14 +269,12 @@ function Register() {
                                 placeholder="Enter 10-digit mobile number"
                                 value={formData.phone}
                                 onChange={handleChange}
-                                maxLength="10"
+                                maxLength={10}
                             />
-
                         </div>
 
                         {/* Date of Birth */}
                         <div className="auth-form-group">
-
                             <label htmlFor="dateOfBirth">
                                 Date of Birth
                             </label>
@@ -303,12 +286,10 @@ function Register() {
                                 value={formData.dateOfBirth}
                                 onChange={handleChange}
                             />
-
                         </div>
 
                         {/* Gender */}
                         <div className="auth-form-group">
-
                             <label htmlFor="gender">
                                 Gender
                             </label>
@@ -339,24 +320,17 @@ function Register() {
                                     Prefer not to say
                                 </option>
                             </select>
-
                         </div>
 
                         {/* Password */}
                         <div className="auth-form-group">
-
                             <label htmlFor="password">
                                 Password
                             </label>
 
                             <div className="password-wrapper">
-
                                 <input
-                                    type={
-                                        showPassword
-                                            ? "text"
-                                            : "password"
-                                    }
+                                    type={showPassword ? "text" : "password"}
                                     id="password"
                                     name="password"
                                     placeholder="Create a strong password"
@@ -368,35 +342,26 @@ function Register() {
                                     type="button"
                                     className="password-toggle"
                                     onClick={() =>
-                                        setShowPassword(
-                                            !showPassword
-                                        )
+                                        setShowPassword(!showPassword)
                                     }
                                 >
-                                    {showPassword
-                                        ? "Hide"
-                                        : "Show"}
+                                    {showPassword ? "Hide" : "Show"}
                                 </button>
-
                             </div>
 
                             <small>
-                                8+ characters, uppercase,
-                                lowercase, number and special
-                                character.
+                                8+ characters, uppercase, lowercase,
+                                number and special character.
                             </small>
-
                         </div>
 
                         {/* Confirm Password */}
                         <div className="auth-form-group">
-
                             <label htmlFor="confirmPassword">
                                 Confirm Password
                             </label>
 
                             <div className="password-wrapper">
-
                                 <input
                                     type={
                                         showConfirmPassword
@@ -406,9 +371,7 @@ function Register() {
                                     id="confirmPassword"
                                     name="confirmPassword"
                                     placeholder="Confirm your password"
-                                    value={
-                                        formData.confirmPassword
-                                    }
+                                    value={formData.confirmPassword}
                                     onChange={handleChange}
                                 />
 
@@ -421,13 +384,9 @@ function Register() {
                                         )
                                     }
                                 >
-                                    {showConfirmPassword
-                                        ? "Hide"
-                                        : "Show"}
+                                    {showConfirmPassword ? "Hide" : "Show"}
                                 </button>
-
                             </div>
-
                         </div>
 
                         {/* Submit */}
@@ -448,12 +407,10 @@ function Register() {
                                 </>
                             )}
                         </button>
-
                     </form>
 
                     {/* Footer */}
                     <div className="auth-footer">
-
                         <p>
                             Already have an account?
                         </p>
@@ -461,13 +418,9 @@ function Register() {
                         <Link to="/login">
                             Login here
                         </Link>
-
                     </div>
-
                 </div>
-
             </div>
-
         </div>
     );
 }
