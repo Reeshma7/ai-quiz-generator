@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import axios from "axios";
+import API from "../services/api";
 import "../styles/Quiz.css";
 
 function Quiz() {
@@ -37,9 +37,7 @@ function Quiz() {
     useEffect(() => {
         const fetchQuiz = async () => {
             try {
-                const response = await axios.get(
-                    `http://localhost:5000/api/quizzes/${id}`
-                );
+                const response = await API.get(`/quizzes/${id}`);
 
                 console.log("Quiz:", response.data);
 
@@ -49,10 +47,7 @@ function Quiz() {
 
                 setQuiz(quizData);
             } catch (error) {
-                console.error(
-                    "Error fetching quiz:",
-                    error
-                );
+                console.error("Error fetching quiz:", error);
 
                 setError(
                     error.response?.data?.message ||
@@ -83,41 +78,27 @@ function Quiz() {
             return;
         }
 
-        const totalQuestions =
-            quiz.questions.length;
+        const totalQuestions = quiz.questions.length;
+        const totalSeconds = totalQuestions * 30;
+        const timerKey = `quiz_end_time_${id}`;
 
-        const totalSeconds =
-            totalQuestions * 30;
-
-        const timerKey =
-            `quiz_end_time_${id}`;
-
-        let endTime =
-            localStorage.getItem(timerKey);
+        let endTime = localStorage.getItem(timerKey);
 
         if (!endTime) {
-            endTime =
-                Date.now() +
-                totalSeconds * 1000;
+            endTime = Date.now() + totalSeconds * 1000;
 
-            localStorage.setItem(
-                timerKey,
-                endTime
-            );
+            localStorage.setItem(timerKey, endTime);
         } else {
             endTime = Number(endTime);
         }
 
         const calculateRemainingTime = () => {
-            const remaining =
-                Math.max(
-                    0,
-                    Math.ceil(
-                        (Number(endTime) -
-                            Date.now()) /
-                        1000
-                    )
-                );
+            const remaining = Math.max(
+                0,
+                Math.ceil(
+                    (Number(endTime) - Date.now()) / 1000
+                )
+            );
 
             setTimeLeft(remaining);
 
@@ -127,13 +108,9 @@ function Quiz() {
         calculateRemainingTime();
 
         const timer = setInterval(() => {
-            const remaining =
-                calculateRemainingTime();
+            const remaining = calculateRemainingTime();
 
-            if (
-                remaining <= 0 &&
-                !submittedRef.current
-            ) {
+            if (remaining <= 0 && !submittedRef.current) {
                 clearInterval(timer);
 
                 submittedRef.current = true;
@@ -156,8 +133,7 @@ function Quiz() {
             return;
         }
 
-        const token =
-            localStorage.getItem("token");
+        const token = localStorage.getItem("token");
 
         if (!token) {
             setError(
@@ -177,39 +153,28 @@ function Quiz() {
             setSubmitting(true);
             setError("");
 
-            const answerArray =
-                quiz.questions.map(
-                    (_, index) =>
-                        answersRef.current[index] || ""
-                );
-
-            console.log(
-                "Auto submitting answers:",
-                answerArray
+            const answerArray = quiz.questions.map(
+                (_, index) => answersRef.current[index] || ""
             );
 
-            const response =
-                await axios.post(
-                    `http://localhost:5000/api/quizzes/${id}/submit`,
-                    {
-                        answers: answerArray
-                    },
-                    {
-                        headers: {
-                            Authorization:
-                                `Bearer ${token}`,
-                            "Content-Type":
-                                "application/json"
-                        }
+            console.log("Auto submitting answers:", answerArray);
+
+            const response = await API.post(
+                `/quizzes/${id}/submit`,
+                {
+                    answers: answerArray
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json"
                     }
-                );
-
-            const result =
-                response.data.result;
-
-            localStorage.removeItem(
-                `quiz_end_time_${id}`
+                }
             );
+
+            const result = response.data.result;
+
+            localStorage.removeItem(`quiz_end_time_${id}`);
 
             if (!result || !result._id) {
                 setError(
@@ -225,27 +190,15 @@ function Quiz() {
                 "⏰ Time is over! Your quiz has been automatically submitted."
             );
 
-            navigate(
-                `/result/${result._id}`
-            );
+            navigate(`/result/${result._id}`);
         } catch (error) {
-            console.error(
-                "Auto submit error:",
-                error
-            );
+            console.error("Auto submit error:", error);
 
             submittedRef.current = false;
 
-            if (
-                error.response?.status === 401
-            ) {
-                localStorage.removeItem(
-                    "token"
-                );
-
-                localStorage.removeItem(
-                    "user"
-                );
+            if (error.response?.status === 401) {
+                localStorage.removeItem("token");
+                localStorage.removeItem("user");
 
                 setError(
                     "Your login session has expired. Please login again."
@@ -280,21 +233,16 @@ function Quiz() {
             return;
         }
 
-        const token =
-            localStorage.getItem("token");
+        const token = localStorage.getItem("token");
 
         if (!token) {
-            setError(
-                "Please login to use the AI Hint."
-            );
-
+            setError("Please login to use the AI Hint.");
             return;
         }
 
-        const nextHintLevel =
-            hintLevel === 0
-                ? 1
-                : hintLevel + 1;
+        const nextHintLevel = hintLevel === 0
+            ? 1
+            : hintLevel + 1;
 
         if (nextHintLevel > 3) {
             return;
@@ -304,31 +252,23 @@ function Quiz() {
             setHintLoading(true);
             setError("");
 
-            const response =
-                await axios.post(
-                    "http://localhost:5000/api/quizzes/hint",
-                    {
-                        question:
-                            question.question,
-                        options:
-                            question.options || [],
-                        difficulty:
-                            quiz.difficulty,
-                        hintLevel:
-                            nextHintLevel
-                    },
-                    {
-                        headers: {
-                            Authorization:
-                                `Bearer ${token}`,
-                            "Content-Type":
-                                "application/json"
-                        }
+            const response = await API.post(
+                "/quizzes/hint",
+                {
+                    question: question.question,
+                    options: question.options || [],
+                    difficulty: quiz.difficulty,
+                    hintLevel: nextHintLevel
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json"
                     }
-                );
+                }
+            );
 
-            const generatedHint =
-                response.data.hint;
+            const generatedHint = response.data.hint;
 
             if (!generatedHint) {
                 throw new Error(
@@ -339,21 +279,11 @@ function Quiz() {
             setHint(generatedHint);
             setHintLevel(nextHintLevel);
         } catch (error) {
-            console.error(
-                "AI hint error:",
-                error
-            );
+            console.error("AI hint error:", error);
 
-            if (
-                error.response?.status === 401
-            ) {
-                localStorage.removeItem(
-                    "token"
-                );
-
-                localStorage.removeItem(
-                    "user"
-                );
+            if (error.response?.status === 401) {
+                localStorage.removeItem("token");
+                localStorage.removeItem("user");
 
                 setError(
                     "Your login session has expired. Please login again."
@@ -389,10 +319,7 @@ function Quiz() {
     // MCQ / DRAG & DROP ANSWER
     // ======================================================
 
-    const handleSelectAnswer = (
-        questionIndex,
-        answer
-    ) => {
+    const handleSelectAnswer = (questionIndex, answer) => {
         if (
             submittedRef.current ||
             finalizedAnswers[questionIndex]
@@ -406,16 +333,12 @@ function Quiz() {
         };
 
         setAnswers(updatedAnswers);
+        answersRef.current = updatedAnswers;
 
-        answersRef.current =
-            updatedAnswers;
-
-        setFinalizedAnswers(
-            (previous) => ({
-                ...previous,
-                [questionIndex]: true
-            })
-        );
+        setFinalizedAnswers((previous) => ({
+            ...previous,
+            [questionIndex]: true
+        }));
 
         setDraggedOption("");
         setIsDragOver(false);
@@ -426,10 +349,7 @@ function Quiz() {
     // DRAG START
     // ======================================================
 
-    const handleDragStart = (
-        e,
-        option
-    ) => {
+    const handleDragStart = (e, option) => {
         if (
             finalizedAnswers[currentQuestion] ||
             submitting
@@ -439,13 +359,8 @@ function Quiz() {
 
         setDraggedOption(option);
 
-        e.dataTransfer.effectAllowed =
-            "move";
-
-        e.dataTransfer.setData(
-            "text/plain",
-            option
-        );
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", option);
     };
 
     // ======================================================
@@ -455,12 +370,9 @@ function Quiz() {
     const handleDragOver = (e) => {
         e.preventDefault();
 
-        e.dataTransfer.dropEffect =
-            "move";
+        e.dataTransfer.dropEffect = "move";
 
-        if (
-            !finalizedAnswers[currentQuestion]
-        ) {
+        if (!finalizedAnswers[currentQuestion]) {
             setIsDragOver(true);
         }
     };
@@ -477,10 +389,7 @@ function Quiz() {
     // DROP ANSWER
     // ======================================================
 
-    const handleDrop = (
-        e,
-        questionIndex
-    ) => {
+    const handleDrop = (e, questionIndex) => {
         e.preventDefault();
 
         if (
@@ -490,16 +399,10 @@ function Quiz() {
             return;
         }
 
-        const droppedOption =
-            e.dataTransfer.getData(
-                "text/plain"
-            );
+        const droppedOption = e.dataTransfer.getData("text/plain");
 
         if (droppedOption) {
-            handleSelectAnswer(
-                questionIndex,
-                droppedOption
-            );
+            handleSelectAnswer(questionIndex, droppedOption);
         }
 
         setDraggedOption("");
@@ -510,10 +413,7 @@ function Quiz() {
     // FILL IN THE BLANK INPUT
     // ======================================================
 
-    const handleFillInput = (
-        questionIndex,
-        value
-    ) => {
+    const handleFillInput = (questionIndex, value) => {
         if (
             submittedRef.current ||
             finalizedAnswers[questionIndex]
@@ -527,9 +427,7 @@ function Quiz() {
         };
 
         setAnswers(updatedAnswers);
-
-        answersRef.current =
-            updatedAnswers;
+        answersRef.current = updatedAnswers;
     };
 
     // ======================================================
@@ -537,13 +435,9 @@ function Quiz() {
     // ======================================================
 
     const handleFillBlankSubmit = () => {
-        const answer =
-            answers[currentQuestion];
+        const answer = answers[currentQuestion];
 
-        if (
-            !answer ||
-            !answer.trim()
-        ) {
+        if (!answer || !answer.trim()) {
             setError(
                 "Please enter an answer before continuing."
             );
@@ -551,12 +445,10 @@ function Quiz() {
             return;
         }
 
-        setFinalizedAnswers(
-            (previous) => ({
-                ...previous,
-                [currentQuestion]: true
-            })
-        );
+        setFinalizedAnswers((previous) => ({
+            ...previous,
+            [currentQuestion]: true
+        }));
 
         setError("");
     };
@@ -565,21 +457,12 @@ function Quiz() {
     // ANSWER CHECK
     // ======================================================
 
-    const checkAnswer = (
-        question,
-        userAnswer
-    ) => {
-        if (
-            !userAnswer ||
-            !question.correctAnswer
-        ) {
+    const checkAnswer = (question, userAnswer) => {
+        if (!userAnswer || !question.correctAnswer) {
             return false;
         }
 
-        if (
-            question.type ===
-            "fill_blank"
-        ) {
+        if (question.type === "fill_blank") {
             return (
                 userAnswer
                     .toString()
@@ -607,14 +490,8 @@ function Quiz() {
     // ======================================================
 
     const handleNextQuestion = () => {
-        if (
-            currentQuestion <
-            quiz.questions.length - 1
-        ) {
-            setCurrentQuestion(
-                (previous) =>
-                    previous + 1
-            );
+        if (currentQuestion < quiz.questions.length - 1) {
+            setCurrentQuestion((previous) => previous + 1);
 
             setDraggedOption("");
             setIsDragOver(false);
@@ -634,10 +511,7 @@ function Quiz() {
 
     const handlePreviousQuestion = () => {
         if (currentQuestion > 0) {
-            setCurrentQuestion(
-                (previous) =>
-                    previous - 1
-            );
+            setCurrentQuestion((previous) => previous - 1);
 
             setDraggedOption("");
             setIsDragOver(false);
@@ -660,8 +534,7 @@ function Quiz() {
             return;
         }
 
-        const token =
-            localStorage.getItem("token");
+        const token = localStorage.getItem("token");
 
         if (!token) {
             setError(
@@ -697,81 +570,50 @@ function Quiz() {
         setError("");
 
         try {
-            const answerArray =
-                quiz.questions.map(
-                    (_, index) =>
-                        answers[index] || ""
-                );
-
-            console.log(
-                "Answers:",
-                answerArray
+            const answerArray = quiz.questions.map(
+                (_, index) => answers[index] || ""
             );
 
-            const response =
-                await axios.post(
-                    `http://localhost:5000/api/quizzes/${id}/submit`,
-                    {
-                        answers: answerArray
-                    },
-                    {
-                        headers: {
-                            Authorization:
-                                `Bearer ${token}`,
-                            "Content-Type":
-                                "application/json"
-                        }
+            console.log("Answers:", answerArray);
+
+            const response = await API.post(
+                `/quizzes/${id}/submit`,
+                {
+                    answers: answerArray
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json"
                     }
-                );
-
-            console.log(
-                "Quiz submitted:",
-                response.data
+                }
             );
 
-            const result =
-                response.data.result;
+            console.log("Quiz submitted:", response.data);
 
-            localStorage.removeItem(
-                `quiz_end_time_${id}`
-            );
+            const result = response.data.result;
 
-            if (
-                !result ||
-                !result._id
-            ) {
+            localStorage.removeItem(`quiz_end_time_${id}`);
+
+            if (!result || !result._id) {
                 setError(
                     "Quiz submitted, but result ID was not returned."
                 );
 
-                submittedRef.current =
-                    false;
+                submittedRef.current = false;
 
                 return;
             }
 
-            navigate(
-                `/result/${result._id}`
-            );
+            navigate(`/result/${result._id}`);
         } catch (error) {
-            console.error(
-                "Submit error:",
-                error
-            );
+            console.error("Submit error:", error);
 
-            submittedRef.current =
-                false;
+            submittedRef.current = false;
 
-            if (
-                error.response?.status === 401
-            ) {
-                localStorage.removeItem(
-                    "token"
-                );
-
-                localStorage.removeItem(
-                    "user"
-                );
+            if (error.response?.status === 401) {
+                localStorage.removeItem("token");
+                localStorage.removeItem("user");
 
                 setError(
                     "Your login session has expired. Please login again."
@@ -798,20 +640,12 @@ function Quiz() {
     // ======================================================
 
     const formatTime = (seconds) => {
-        const minutes =
-            Math.floor(seconds / 60);
-
-        const remainingSeconds =
-            seconds % 60;
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
 
         return (
-            `${String(minutes).padStart(
-                2,
-                "0"
-            )}:` +
-            `${String(
-                remainingSeconds
-            ).padStart(2, "0")}`
+            `${String(minutes).padStart(2, "0")}:` +
+            `${String(remainingSeconds).padStart(2, "0")}`
         );
     };
 
@@ -835,24 +669,16 @@ function Quiz() {
     // QUESTION TYPE NAME
     // ======================================================
 
-    const getQuestionTypeName = (
-        type
-    ) => {
-        if (
-            type === "fill_blank"
-        ) {
+    const getQuestionTypeName = (type) => {
+        if (type === "fill_blank") {
             return "✏️ Fill in the Blank";
         }
 
-        if (
-            type === "drag_drop"
-        ) {
+        if (type === "drag_drop") {
             return "↔️ Drag & Drop";
         }
 
-        if (
-            type === "dropdown"
-        ) {
+        if (type === "dropdown") {
             return "🔽 Dropdown";
         }
 
@@ -868,13 +694,9 @@ function Quiz() {
             <div className="quiz-loading">
                 <div className="quiz-spinner"></div>
 
-                <h2>
-                    Loading your quiz...
-                </h2>
+                <h2>Loading your quiz...</h2>
 
-                <p>
-                    Preparing your questions
-                </p>
+                <p>Preparing your questions</p>
             </div>
         );
     }
@@ -887,21 +709,13 @@ function Quiz() {
         return (
             <div className="quiz-error-page">
                 <div className="quiz-error-card">
-                    <div className="error-icon">
-                        ⚠️
-                    </div>
+                    <div className="error-icon">⚠️</div>
 
-                    <h2>
-                        Something went wrong
-                    </h2>
+                    <h2>Something went wrong</h2>
 
                     <p>{error}</p>
 
-                    <button
-                        onClick={() =>
-                            navigate("/")
-                        }
-                    >
+                    <button onClick={() => navigate("/")}>
                         Back to Home
                     </button>
                 </div>
@@ -917,24 +731,15 @@ function Quiz() {
         return (
             <div className="quiz-error-page">
                 <div className="quiz-error-card">
-                    <div className="error-icon">
-                        🔍
-                    </div>
+                    <div className="error-icon">🔍</div>
 
-                    <h2>
-                        Quiz Not Found
-                    </h2>
+                    <h2>Quiz Not Found</h2>
 
                     <p>
-                        The quiz you're looking
-                        for doesn't exist.
+                        The quiz you're looking for doesn't exist.
                     </p>
 
-                    <button
-                        onClick={() =>
-                            navigate("/")
-                        }
-                    >
+                    <button onClick={() => navigate("/")}>
                         Back to Home
                     </button>
                 </div>
@@ -946,47 +751,25 @@ function Quiz() {
     // VARIABLES
     // ======================================================
 
-    const totalQuestions =
-        quiz.questions?.length || 0;
+    const totalQuestions = quiz.questions?.length || 0;
 
-    const question =
-        quiz.questions[
-            currentQuestion
-        ];
+    const question = quiz.questions[currentQuestion];
 
-    const questionType =
-        question.type || "mcq";
+    const questionType = question.type || "mcq";
 
-    const selectedAnswer =
-        answers[currentQuestion] || "";
+    const selectedAnswer = answers[currentQuestion] || "";
 
-    const isAnswered =
-        Boolean(
-            finalizedAnswers[
-                currentQuestion
-            ]
-        );
+    const isAnswered = Boolean(finalizedAnswers[currentQuestion]);
 
-    const isCorrect =
-        isAnswered
-            ? checkAnswer(
-                question,
-                selectedAnswer
-            )
-            : false;
+    const isCorrect = isAnswered
+        ? checkAnswer(question, selectedAnswer)
+        : false;
 
-    const answeredCount =
-        Object.keys(
-            finalizedAnswers
-        ).length;
+    const answeredCount = Object.keys(finalizedAnswers).length;
 
-    const progress =
-        totalQuestions > 0
-            ? (
-                answeredCount /
-                totalQuestions
-            ) * 100
-            : 0;
+    const progress = totalQuestions > 0
+        ? (answeredCount / totalQuestions) * 100
+        : 0;
 
     // ======================================================
     // UI
@@ -1008,13 +791,10 @@ function Quiz() {
                         🧠 AI Generated Quiz
                     </div>
 
-                    <h1>
-                        {quiz.topic} Quiz
-                    </h1>
+                    <h1>{quiz.topic} Quiz</h1>
 
                     <p>
-                        Test your knowledge and
-                        learn from every answer.
+                        Test your knowledge and learn from every answer.
                     </p>
 
                     <div className="quiz-info">
@@ -1022,13 +802,9 @@ function Quiz() {
                             <span>🎯</span>
 
                             <div>
-                                <small>
-                                    Difficulty
-                                </small>
+                                <small>Difficulty</small>
 
-                                <strong>
-                                    {quiz.difficulty}
-                                </strong>
+                                <strong>{quiz.difficulty}</strong>
                             </div>
                         </div>
 
@@ -1036,15 +812,10 @@ function Quiz() {
                             <span>📝</span>
 
                             <div>
-                                <small>
-                                    Question
-                                </small>
+                                <small>Question</small>
 
                                 <strong>
-                                    {currentQuestion +
-                                        1}
-                                    /
-                                    {totalQuestions}
+                                    {currentQuestion + 1}/{totalQuestions}
                                 </strong>
                             </div>
                         </div>
@@ -1053,36 +824,21 @@ function Quiz() {
                             <span>✅</span>
 
                             <div>
-                                <small>
-                                    Answered
-                                </small>
+                                <small>Answered</small>
 
                                 <strong>
-                                    {answeredCount}/
-                                    {totalQuestions}
+                                    {answeredCount}/{totalQuestions}
                                 </strong>
                             </div>
                         </div>
 
-                        <div
-                            className={
-                                getTimerClass()
-                            }
-                        >
-                            <span className="timer-icon">
-                                ⏱️
-                            </span>
+                        <div className={getTimerClass()}>
+                            <span className="timer-icon">⏱️</span>
 
                             <div>
-                                <small>
-                                    Time Left
-                                </small>
+                                <small>Time Left</small>
 
-                                <strong>
-                                    {formatTime(
-                                        timeLeft
-                                    )}
-                                </strong>
+                                <strong>{formatTime(timeLeft)}</strong>
                             </div>
                         </div>
                     </div>
@@ -1090,26 +846,22 @@ function Quiz() {
 
                 {/* TIMER WARNING */}
 
-                {timeLeft <= 60 &&
-                    timeLeft > 0 && (
-                        <div className="timer-warning-message">
-                            {timeLeft <= 30
-                                ? "🚨 Hurry! Only a few seconds left!"
-                                : "⚠️ Less than one minute remaining!"}
-                        </div>
-                    )}
+                {timeLeft <= 60 && timeLeft > 0 && (
+                    <div className="timer-warning-message">
+                        {timeLeft <= 30
+                            ? "🚨 Hurry! Only a few seconds left!"
+                            : "⚠️ Less than one minute remaining!"}
+                    </div>
+                )}
 
                 {/* PROGRESS */}
 
                 <div className="quiz-progress-card">
                     <div className="progress-top">
-                        <span>
-                            Your Progress
-                        </span>
+                        <span>Your Progress</span>
 
                         <strong>
-                            {answeredCount}/
-                            {totalQuestions}
+                            {answeredCount}/{totalQuestions}
                         </strong>
                     </div>
 
@@ -1117,8 +869,7 @@ function Quiz() {
                         <div
                             className="progress-fill"
                             style={{
-                                width:
-                                    `${progress}%`
+                                width: `${progress}%`
                             }}
                         />
                     </div>
@@ -1140,23 +891,17 @@ function Quiz() {
 
                         <div className="question-top-row">
                             <div className="question-number">
-                                Question{" "}
-                                {currentQuestion +
-                                    1}
+                                Question {currentQuestion + 1}
                             </div>
 
                             <div className="question-type-badge">
-                                {getQuestionTypeName(
-                                    questionType
-                                )}
+                                {getQuestionTypeName(questionType)}
                             </div>
                         </div>
 
                         {/* QUESTION TEXT */}
 
-                        <h2>
-                            {question.question}
-                        </h2>
+                        <h2>{question.question}</h2>
 
                         {/* AI HINT */}
 
@@ -1165,26 +910,20 @@ function Quiz() {
                                 <button
                                     type="button"
                                     className="ai-hint-button"
-                                    onClick={
-                                        handleGetHint
-                                    }
+                                    onClick={handleGetHint}
                                     disabled={
                                         hintLoading ||
                                         submitting ||
-                                        hintLevel >=
-                                            3
+                                        hintLevel >= 3
                                     }
                                 >
                                     {hintLoading
                                         ? "🤖 Generating Hint..."
-                                        : hintLevel ===
-                                            0
+                                        : hintLevel === 0
                                             ? "💡 Get AI Hint"
-                                            : hintLevel ===
-                                                1
+                                            : hintLevel === 1
                                                 ? "💡 Get Stronger Hint"
-                                                : hintLevel ===
-                                                    2
+                                                : hintLevel === 2
                                                     ? "💡 Get Final Hint"
                                                     : "✅ All Hints Used"}
                                 </button>
@@ -1192,31 +931,19 @@ function Quiz() {
                                 {hint && (
                                     <div className="ai-hint-box">
                                         <div className="ai-hint-header">
-                                            <span>
-                                                🤖 AI Hint
-                                            </span>
+                                            <span>🤖 AI Hint</span>
 
                                             <span>
-                                                Level{" "}
-                                                {
-                                                    hintLevel
-                                                }
-                                                /3
+                                                Level {hintLevel}/3
                                             </span>
                                         </div>
 
-                                        <p>
-                                            {hint}
-                                        </p>
+                                        <p>{hint}</p>
 
-                                        {hintLevel <
-                                            3 && (
+                                        {hintLevel < 3 && (
                                             <small>
-                                                Need more
-                                                help? You
-                                                can request
-                                                a stronger
-                                                hint.
+                                                Need more help? You can
+                                                request a stronger hint.
                                             </small>
                                         )}
                                     </div>
@@ -1226,67 +953,40 @@ function Quiz() {
 
                         {/* MCQ */}
 
-                        {questionType ===
-                            "mcq" && (
+                        {questionType === "mcq" && (
                             <div className="options-container">
                                 {question.options?.map(
-                                    (
-                                        option,
-                                        optionIndex
-                                    ) => {
+                                    (option, optionIndex) => {
                                         const isSelected =
-                                            selectedAnswer ===
-                                            option;
+                                            selectedAnswer === option;
 
                                         const isCorrectOption =
-                                            option ===
-                                            question.correctAnswer;
+                                            option === question.correctAnswer;
 
-                                        let optionClass =
-                                            "option-card";
+                                        let optionClass = "option-card";
 
-                                        if (
-                                            isAnswered
-                                        ) {
-                                            if (
-                                                isCorrectOption
-                                            ) {
-                                                optionClass +=
-                                                    " correct";
+                                        if (isAnswered) {
+                                            if (isCorrectOption) {
+                                                optionClass += " correct";
                                             }
 
-                                            if (
-                                                isSelected &&
-                                                !isCorrect
-                                            ) {
-                                                optionClass +=
-                                                    " wrong";
+                                            if (isSelected && !isCorrect) {
+                                                optionClass += " wrong";
                                             }
-                                        } else if (
-                                            isSelected
-                                        ) {
-                                            optionClass +=
-                                                " selected";
+                                        } else if (isSelected) {
+                                            optionClass += " selected";
                                         }
 
                                         return (
                                             <label
-                                                key={
-                                                    optionIndex
-                                                }
-                                                className={
-                                                    optionClass
-                                                }
+                                                key={optionIndex}
+                                                className={optionClass}
                                             >
                                                 <input
                                                     type="radio"
                                                     name={`question-${currentQuestion}`}
-                                                    value={
-                                                        option
-                                                    }
-                                                    checked={
-                                                        isSelected
-                                                    }
+                                                    value={option}
+                                                    checked={isSelected}
                                                     disabled={
                                                         isAnswered ||
                                                         submitting
@@ -1301,15 +1001,12 @@ function Quiz() {
 
                                                 <span className="option-letter">
                                                     {String.fromCharCode(
-                                                        65 +
-                                                            optionIndex
+                                                        65 + optionIndex
                                                     )}
                                                 </span>
 
                                                 <span className="option-text">
-                                                    {
-                                                        option
-                                                    }
+                                                    {option}
                                                 </span>
 
                                                 {isAnswered &&
@@ -1335,76 +1032,50 @@ function Quiz() {
 
                         {/* DRAG & DROP */}
 
-                        {questionType ===
-                            "drag_drop" && (
+                        {questionType === "drag_drop" && (
                             <div className="drag-drop-container">
                                 <div className="drag-drop-instructions">
-                                    ↔️ Drag the correct
-                                    option into the
+                                    ↔️ Drag the correct option into the
                                     answer box
 
                                     <span>
-                                        Or tap an option
-                                        to select it
+                                        Or tap an option to select it
                                     </span>
                                 </div>
 
                                 <div className="drag-options">
                                     {question.options?.map(
-                                        (
-                                            option,
-                                            optionIndex
-                                        ) => {
+                                        (option, optionIndex) => {
                                             const isSelected =
-                                                selectedAnswer ===
-                                                option;
+                                                selectedAnswer === option;
 
-                                            let optionClass =
-                                                "drag-option";
+                                            let optionClass = "drag-option";
 
-                                            if (
-                                                draggedOption ===
-                                                option
-                                            ) {
-                                                optionClass +=
-                                                    " dragging";
+                                            if (draggedOption === option) {
+                                                optionClass += " dragging";
                                             }
 
-                                            if (
-                                                isSelected
-                                            ) {
-                                                optionClass +=
-                                                    " selected";
+                                            if (isSelected) {
+                                                optionClass += " selected";
                                             }
 
                                             return (
                                                 <div
-                                                    key={
-                                                        optionIndex
-                                                    }
-                                                    className={
-                                                        optionClass
-                                                    }
+                                                    key={optionIndex}
+                                                    className={optionClass}
                                                     draggable={
                                                         !isAnswered &&
                                                         !submitting
                                                     }
-                                                    onDragStart={(
-                                                        e
-                                                    ) =>
+                                                    onDragStart={(e) =>
                                                         handleDragStart(
                                                             e,
                                                             option
                                                         )
                                                     }
                                                     onDragEnd={() => {
-                                                        setDraggedOption(
-                                                            ""
-                                                        );
-
-                                                        setIsDragOver(
-                                                            false
-                                                        );
+                                                        setDraggedOption("");
+                                                        setIsDragOver(false);
                                                     }}
                                                     onClick={() => {
                                                         if (
@@ -1423,14 +1094,11 @@ function Quiz() {
                                                     </span>
 
                                                     <span className="drag-option-number">
-                                                        {optionIndex +
-                                                            1}
+                                                        {optionIndex + 1}
                                                     </span>
 
                                                     <span className="drag-option-text">
-                                                        {
-                                                            option
-                                                        }
+                                                        {option}
                                                     </span>
                                                 </div>
                                             );
@@ -1459,17 +1127,10 @@ function Quiz() {
                                                 : ""
                                         }
                                     `}
-                                    onDragOver={
-                                        handleDragOver
-                                    }
-                                    onDragLeave={
-                                        handleDragLeave
-                                    }
+                                    onDragOver={handleDragOver}
+                                    onDragLeave={handleDragLeave}
                                     onDrop={(e) =>
-                                        handleDrop(
-                                            e,
-                                            currentQuestion
-                                        )
+                                        handleDrop(e, currentQuestion)
                                     }
                                 >
                                     {selectedAnswer ? (
@@ -1482,11 +1143,7 @@ function Quiz() {
                                                     : "✓"}
                                             </span>
 
-                                            <span>
-                                                {
-                                                    selectedAnswer
-                                                }
-                                            </span>
+                                            <span>{selectedAnswer}</span>
                                         </div>
                                     ) : (
                                         <div className="drop-zone-placeholder">
@@ -1495,14 +1152,11 @@ function Quiz() {
                                             </span>
 
                                             <strong>
-                                                Drop your
-                                                answer here
+                                                Drop your answer here
                                             </strong>
 
                                             <small>
-                                                Drag an
-                                                option into
-                                                this box
+                                                Drag an option into this box
                                             </small>
                                         </div>
                                     )}
@@ -1512,12 +1166,10 @@ function Quiz() {
 
                         {/* LEGACY DROPDOWN */}
 
-                        {questionType ===
-                            "dropdown" && (
+                        {questionType === "dropdown" && (
                             <div className="dropdown-answer-container">
                                 <label className="answer-label">
-                                    🔽 Select your
-                                    answer
+                                    🔽 Select your answer
                                 </label>
 
                                 <select
@@ -1528,50 +1180,31 @@ function Quiz() {
                                                 : "quiz-dropdown wrong"
                                             : "quiz-dropdown"
                                     }
-                                    value={
-                                        selectedAnswer
-                                    }
+                                    value={selectedAnswer}
                                     disabled={
                                         isAnswered ||
                                         submitting
                                     }
                                     onChange={(e) => {
-                                        if (
-                                            e.target
-                                                .value
-                                        ) {
+                                        if (e.target.value) {
                                             handleSelectAnswer(
                                                 currentQuestion,
-                                                e.target
-                                                    .value
+                                                e.target.value
                                             );
                                         }
                                     }}
                                 >
-                                    <option
-                                        value=""
-                                        disabled
-                                    >
-                                        -- Select an
-                                        answer --
+                                    <option value="" disabled>
+                                        -- Select an answer --
                                     </option>
 
                                     {question.options?.map(
-                                        (
-                                            option,
-                                            optionIndex
-                                        ) => (
+                                        (option, optionIndex) => (
                                             <option
-                                                key={
-                                                    optionIndex
-                                                }
-                                                value={
-                                                    option
-                                                }
+                                                key={optionIndex}
+                                                value={option}
                                             >
-                                                {
-                                                    option
-                                                }
+                                                {option}
                                             </option>
                                         )
                                     )}
@@ -1581,12 +1214,10 @@ function Quiz() {
 
                         {/* FILL IN THE BLANK */}
 
-                        {questionType ===
-                            "fill_blank" && (
+                        {questionType === "fill_blank" && (
                             <div className="fill-blank-container">
                                 <label className="answer-label">
-                                    ✏️ Type the missing
-                                    answer
+                                    ✏️ Type the missing answer
                                 </label>
 
                                 <input
@@ -1599,9 +1230,7 @@ function Quiz() {
                                             : "fill-blank-input"
                                     }
                                     placeholder="Type your answer here..."
-                                    value={
-                                        selectedAnswer
-                                    }
+                                    value={selectedAnswer}
                                     disabled={
                                         isAnswered ||
                                         submitting
@@ -1609,17 +1238,12 @@ function Quiz() {
                                     onChange={(e) =>
                                         handleFillInput(
                                             currentQuestion,
-                                            e.target
-                                                .value
+                                            e.target.value
                                         )
                                     }
                                     onKeyDown={(e) => {
-                                        if (
-                                            e.key ===
-                                            "Enter"
-                                        ) {
+                                        if (e.key === "Enter") {
                                             e.preventDefault();
-
                                             handleFillBlankSubmit();
                                         }
                                     }}
@@ -1629,9 +1253,7 @@ function Quiz() {
                                     <button
                                         type="button"
                                         className="check-answer-button"
-                                        onClick={
-                                            handleFillBlankSubmit
-                                        }
+                                        onClick={handleFillBlankSubmit}
                                         disabled={
                                             submitting ||
                                             !selectedAnswer.trim()
@@ -1655,9 +1277,7 @@ function Quiz() {
                             >
                                 <div className="feedback-header">
                                     <span className="feedback-icon">
-                                        {isCorrect
-                                            ? "✅"
-                                            : "❌"}
+                                        {isCorrect ? "✅" : "❌"}
                                     </span>
 
                                     <strong>
@@ -1669,22 +1289,16 @@ function Quiz() {
 
                                 {!isCorrect && (
                                     <div className="correct-answer-text">
-                                        <strong>
-                                            Correct Answer:
-                                        </strong>
+                                        <strong>Correct Answer:</strong>
 
                                         <span>
-                                            {
-                                                question.correctAnswer
-                                            }
+                                            {question.correctAnswer}
                                         </span>
                                     </div>
                                 )}
 
                                 <div className="explanation">
-                                    <strong>
-                                        💡 Explanation
-                                    </strong>
+                                    <strong>💡 Explanation</strong>
 
                                     <p>
                                         {question.explanation ||
@@ -1698,17 +1312,12 @@ function Quiz() {
 
                         {isAnswered && (
                             <div className="question-navigation">
-                                {currentQuestion >
-                                    0 && (
+                                {currentQuestion > 0 && (
                                     <button
                                         type="button"
                                         className="previous-question-button"
-                                        onClick={
-                                            handlePreviousQuestion
-                                        }
-                                        disabled={
-                                            submitting
-                                        }
+                                        onClick={handlePreviousQuestion}
+                                        disabled={submitting}
                                     >
                                         ← Previous
                                     </button>
@@ -1716,18 +1325,12 @@ function Quiz() {
 
                                 <div className="navigation-spacer"></div>
 
-                                {currentQuestion <
-                                totalQuestions -
-                                    1 ? (
+                                {currentQuestion < totalQuestions - 1 ? (
                                     <button
                                         type="button"
                                         className="next-question-button"
-                                        onClick={
-                                            handleNextQuestion
-                                        }
-                                        disabled={
-                                            submitting
-                                        }
+                                        onClick={handleNextQuestion}
+                                        disabled={submitting}
                                     >
                                         Next Question →
                                     </button>
@@ -1735,12 +1338,8 @@ function Quiz() {
                                     <button
                                         type="button"
                                         className="submit-quiz-button"
-                                        onClick={
-                                            handleSubmit
-                                        }
-                                        disabled={
-                                            submitting
-                                        }
+                                        onClick={handleSubmit}
+                                        disabled={submitting}
                                     >
                                         {submitting
                                             ? "Submitting..."
