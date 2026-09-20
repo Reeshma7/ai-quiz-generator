@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import API from "../services/api";
 import "../styles/Profile.css";
 
 function Profile() {
@@ -33,14 +33,11 @@ function Profile() {
                     return;
                 }
 
-                const response = await axios.get(
-                    "http://localhost:5000/api/auth/profile",
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`
-                        }
+                const response = await API.get("/auth/profile", {
+                    headers: {
+                        Authorization: `Bearer ${token}`
                     }
-                );
+                });
 
                 const profile = response.data.user;
 
@@ -54,13 +51,13 @@ function Profile() {
                         : "",
                     gender: profile.gender || ""
                 });
-
             } catch (error) {
                 console.error("Profile error:", error);
 
                 if (error.response?.status === 401) {
                     localStorage.removeItem("token");
                     localStorage.removeItem("user");
+
                     navigate("/login");
                 } else {
                     setError(
@@ -76,7 +73,6 @@ function Profile() {
         fetchProfile();
     }, [navigate]);
 
-
     // =================================
     // HANDLE CHANGE
     // =================================
@@ -91,7 +87,6 @@ function Profile() {
         setSuccess("");
     };
 
-
     // =================================
     // UPDATE PROFILE
     // =================================
@@ -104,8 +99,8 @@ function Profile() {
 
         // Basic validation
         if (
-            !formData.name ||
-            !formData.phone ||
+            !formData.name.trim() ||
+            !formData.phone.trim() ||
             !formData.dateOfBirth ||
             !formData.gender
         ) {
@@ -128,9 +123,18 @@ function Profile() {
 
             const token = localStorage.getItem("token");
 
-            const response = await axios.put(
-                "http://localhost:5000/api/auth/profile",
-                formData,
+            if (!token) {
+                navigate("/login");
+                return;
+            }
+
+            const response = await API.put(
+                "/auth/profile",
+                {
+                    ...formData,
+                    name: formData.name.trim(),
+                    phone: formData.phone.trim()
+                },
                 {
                     headers: {
                         Authorization: `Bearer ${token}`
@@ -149,14 +153,9 @@ function Profile() {
             );
 
             // Tell Navbar about updated user
-            window.dispatchEvent(
-                new Event("authChange")
-            );
+            window.dispatchEvent(new Event("authChange"));
 
-            setSuccess(
-                "Profile updated successfully!"
-            );
-
+            setSuccess("Profile updated successfully!");
         } catch (error) {
             console.error("Update profile error:", error);
 
@@ -172,12 +171,10 @@ function Profile() {
                 error.response?.data?.message ||
                 "Unable to update profile"
             );
-
         } finally {
             setSaving(false);
         }
     };
-
 
     // =================================
     // LOADING
@@ -187,12 +184,13 @@ function Profile() {
         return (
             <div className="profile-loading">
                 <div className="profile-spinner"></div>
+
                 <h2>Loading Profile...</h2>
+
                 <p>Please wait a moment.</p>
             </div>
         );
     }
-
 
     // =================================
     // PAGE
@@ -200,18 +198,14 @@ function Profile() {
 
     return (
         <div className="profile-page">
-
             <div className="profile-background">
                 <div className="profile-glow profile-glow-one"></div>
                 <div className="profile-glow profile-glow-two"></div>
             </div>
 
             <div className="profile-container">
-
                 {/* Header */}
-
                 <div className="profile-header">
-
                     <div className="profile-avatar">
                         {user?.name
                             ? user.name.charAt(0).toUpperCase()
@@ -232,16 +226,11 @@ function Profile() {
                             and account details.
                         </p>
                     </div>
-
                 </div>
 
-
                 {/* Card */}
-
                 <div className="profile-card">
-
                     <div className="profile-card-header">
-
                         <div>
                             <h2>Personal Information</h2>
 
@@ -249,34 +238,25 @@ function Profile() {
                                 Update your profile details below.
                             </p>
                         </div>
-
                     </div>
 
-
                     {/* Error */}
-
                     {error && (
                         <div className="profile-error">
                             ⚠️ {error}
                         </div>
                     )}
 
-
                     {/* Success */}
-
                     {success && (
                         <div className="profile-success">
                             ✓ {success}
                         </div>
                     )}
 
-
                     <form onSubmit={handleSubmit}>
-
                         {/* Name */}
-
                         <div className="profile-form-group">
-
                             <label htmlFor="name">
                                 Full Name
                             </label>
@@ -289,14 +269,10 @@ function Profile() {
                                 onChange={handleChange}
                                 placeholder="Enter your full name"
                             />
-
                         </div>
 
-
                         {/* Email */}
-
                         <div className="profile-form-group">
-
                             <label htmlFor="email">
                                 Email Address
                             </label>
@@ -311,14 +287,10 @@ function Profile() {
                             <small>
                                 Email address cannot be changed.
                             </small>
-
                         </div>
 
-
                         {/* Phone */}
-
                         <div className="profile-form-group">
-
                             <label htmlFor="phone">
                                 Phone Number
                             </label>
@@ -332,14 +304,10 @@ function Profile() {
                                 placeholder="Enter 10-digit phone number"
                                 maxLength="10"
                             />
-
                         </div>
 
-
                         {/* DOB */}
-
                         <div className="profile-form-group">
-
                             <label htmlFor="dateOfBirth">
                                 Date of Birth
                             </label>
@@ -351,14 +319,10 @@ function Profile() {
                                 value={formData.dateOfBirth}
                                 onChange={handleChange}
                             />
-
                         </div>
 
-
                         {/* Gender */}
-
                         <div className="profile-form-group">
-
                             <label htmlFor="gender">
                                 Gender
                             </label>
@@ -388,16 +352,11 @@ function Profile() {
                                 <option value="Prefer not to say">
                                     Prefer not to say
                                 </option>
-
                             </select>
-
                         </div>
 
-
                         {/* Buttons */}
-
                         <div className="profile-actions">
-
                             <button
                                 type="button"
                                 className="profile-cancel"
@@ -423,15 +382,10 @@ function Profile() {
                                     </>
                                 )}
                             </button>
-
                         </div>
-
                     </form>
-
                 </div>
-
             </div>
-
         </div>
     );
 }
