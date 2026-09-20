@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import API from "../services/api";
 import "../styles/GenerateQuiz.css";
 
 function GenerateQuiz() {
@@ -59,11 +59,11 @@ function GenerateQuiz() {
 
         try {
             // ==========================================
-            // SEND REQUEST TO BACKEND
+            // SEND REQUEST TO DEPLOYED BACKEND
             // ==========================================
 
-            const response = await axios.post(
-                "http://localhost:5000/api/quizzes/generate",
+            const response = await API.post(
+                "/quizzes/generate",
                 {
                     topic: topic.trim(),
                     difficulty: difficulty,
@@ -156,7 +156,6 @@ function GenerateQuiz() {
 
             </div>
 
-
             {/* =================================
                 MAIN CONTAINER
             ================================= */}
@@ -184,7 +183,6 @@ function GenerateQuiz() {
                     </p>
 
                 </div>
-
 
                 {/* =================================
                     FORM CARD
@@ -221,7 +219,6 @@ function GenerateQuiz() {
                         </small>
 
                     </div>
-
 
                     {/* =================================
                         DIFFICULTY
@@ -260,7 +257,6 @@ function GenerateQuiz() {
                                 </small>
                             </button>
 
-
                             {/* MEDIUM */}
 
                             <button
@@ -285,7 +281,6 @@ function GenerateQuiz() {
                                     Intermediate
                                 </small>
                             </button>
-
 
                             {/* HARD */}
 
@@ -315,7 +310,6 @@ function GenerateQuiz() {
                         </div>
 
                     </div>
-
 
                     {/* =================================
                         NUMBER OF QUESTIONS
@@ -364,7 +358,6 @@ function GenerateQuiz() {
 
                     </div>
 
-
                     {/* =================================
                         ERROR
                     ================================= */}
@@ -374,7 +367,6 @@ function GenerateQuiz() {
                             ⚠️ {error}
                         </div>
                     )}
-
 
                     {/* =================================
                         SUBMIT BUTTON
@@ -403,7 +395,6 @@ function GenerateQuiz() {
                         )}
 
                     </button>
-
 
                     {/* =================================
                         NOTE
