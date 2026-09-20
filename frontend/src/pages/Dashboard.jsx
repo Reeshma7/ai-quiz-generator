@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
+import API from "../services/api";
 import "../styles/Dashboard.css";
 
 function Dashboard() {
@@ -49,15 +49,9 @@ function Dashboard() {
 
                 const [statsResponse, weakAreasResponse] =
                     await Promise.all([
-                        axios.get(
-                            "http://localhost:5000/api/quizzes/dashboard/stats",
-                            config
-                        ),
+                        API.get("/quizzes/dashboard/stats", config),
 
-                        axios.get(
-                            "http://localhost:5000/api/quizzes/dashboard/weak-areas",
-                            config
-                        )
+                        API.get("/quizzes/dashboard/weak-areas", config)
                     ]);
 
                 console.log(
@@ -102,9 +96,7 @@ function Dashboard() {
                 // TOKEN ERROR
                 // ==========================================
 
-                if (
-                    error.response?.status === 401
-                ) {
+                if (error.response?.status === 401) {
                     localStorage.removeItem("token");
                     localStorage.removeItem("user");
 
@@ -124,7 +116,6 @@ function Dashboard() {
 
         fetchDashboardData();
     }, [navigate]);
-
 
     // ==========================================
     // LOADING
@@ -147,7 +138,6 @@ function Dashboard() {
             </div>
         );
     }
-
 
     // ==========================================
     // DASHBOARD ERROR
@@ -175,7 +165,6 @@ function Dashboard() {
         );
     }
 
-
     return (
         <div className="dashboard-page">
 
@@ -190,7 +179,6 @@ function Dashboard() {
                 <div className="dashboard-glow dashboard-glow-two"></div>
 
             </div>
-
 
             <div className="dashboard-container">
 
@@ -215,7 +203,6 @@ function Dashboard() {
                     </p>
 
                 </div>
-
 
                 {/* =================================
                     STATISTICS
@@ -245,7 +232,6 @@ function Dashboard() {
 
                     </div>
 
-
                     {/* AVERAGE SCORE */}
 
                     <div className="dashboard-stat-card">
@@ -268,7 +254,6 @@ function Dashboard() {
 
                     </div>
 
-
                     {/* BEST SCORE */}
 
                     <div className="dashboard-stat-card">
@@ -290,7 +275,6 @@ function Dashboard() {
                         </div>
 
                     </div>
-
 
                     {/* QUIZZES TODAY */}
 
@@ -315,7 +299,6 @@ function Dashboard() {
                     </div>
 
                 </div>
-
 
                 {/* =================================
                     WEAK AREAS
@@ -349,7 +332,6 @@ function Dashboard() {
                         </span>
 
                     </div>
-
 
                     {/* =================================
                         NO WEAK AREAS
@@ -389,79 +371,73 @@ function Dashboard() {
 
                         <div className="weak-area-list">
 
-                            {weakAreas.map(
-                                (area, index) => {
+                            {weakAreas.map((area, index) => {
 
-                                    return (
-                                        <div
-                                            className="weak-area-card"
-                                            key={area.topic}
-                                        >
+                                return (
+                                    <div
+                                        className="weak-area-card"
+                                        key={area.topic}
+                                    >
 
-                                            <div className="weak-area-number">
-                                                {index + 1}
-                                            </div>
+                                        <div className="weak-area-number">
+                                            {index + 1}
+                                        </div>
 
+                                        <div className="weak-area-details">
 
-                                            <div className="weak-area-details">
+                                            <div className="weak-area-title">
 
-                                                <div className="weak-area-title">
+                                                <h3>
+                                                    {area.topic}
+                                                </h3>
 
-                                                    <h3>
-                                                        {area.topic}
-                                                    </h3>
+                                                <span>
+                                                    {area.attempts}{" "}
 
-                                                    <span>
-                                                        {area.attempts}{" "}
-
-                                                        {area.attempts === 1
-                                                            ? "attempt"
-                                                            : "attempts"}
-                                                    </span>
-
-                                                </div>
-
-
-                                                <div className="weak-progress">
-
-                                                    <div
-                                                        className="weak-progress-bar"
-                                                        style={{
-                                                            width: `${area.averageScore}%`
-                                                        }}
-                                                    ></div>
-
-                                                </div>
-
-
-                                                <div className="weak-progress-info">
-
-                                                    <span>
-                                                        Average performance
-                                                    </span>
-
-                                                    <strong>
-                                                        {area.averageScore}%
-                                                    </strong>
-
-                                                </div>
+                                                    {area.attempts === 1
+                                                        ? "attempt"
+                                                        : "attempts"}
+                                                </span>
 
                                             </div>
 
+                                            <div className="weak-progress">
 
-                                            <Link
-                                                to={`/generate?topic=${encodeURIComponent(
-                                                    area.topic
-                                                )}`}
-                                                className="weak-practice-button"
-                                            >
-                                                Practice
-                                            </Link>
+                                                <div
+                                                    className="weak-progress-bar"
+                                                    style={{
+                                                        width: `${area.averageScore}%`
+                                                    }}
+                                                ></div>
+
+                                            </div>
+
+                                            <div className="weak-progress-info">
+
+                                                <span>
+                                                    Average performance
+                                                </span>
+
+                                                <strong>
+                                                    {area.averageScore}%
+                                                </strong>
+
+                                            </div>
 
                                         </div>
-                                    );
-                                }
-                            )}
+
+                                        <Link
+                                            to={`/generate?topic=${encodeURIComponent(
+                                                area.topic
+                                            )}`}
+                                            className="weak-practice-button"
+                                        >
+                                            Practice
+                                        </Link>
+
+                                    </div>
+                                );
+                            })}
 
                         </div>
                     )}
