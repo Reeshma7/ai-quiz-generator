@@ -1,4 +1,5 @@
 import { useState } from "react";
+import API from "../services/api";
 import "../styles/StudyNotes.css";
 
 function StudyNotes() {
@@ -19,9 +20,7 @@ function StudyNotes() {
 
         const sectionHeadings = [
             "INTRODUCTION TO JAVA",
-            "INTRODUCTION TO JAVA",
             "IMPORTANT DEFINITIONS",
-            "CORE CONCEPTS OF JAVA",
             "CORE CONCEPTS OF JAVA",
             "PRACTICAL EXAMPLE",
             "PRACTICAL EXAMPLES",
@@ -43,10 +42,7 @@ function StudyNotes() {
                 "gi"
             );
 
-            text = text.replace(
-                regex,
-                `\n\n${heading}\n\n`
-            );
+            text = text.replace(regex, `\n\n${heading}\n\n`);
         });
 
         text = text.replace(
@@ -54,20 +50,9 @@ function StudyNotes() {
             "\n\n$1\n"
         );
 
-        text = text.replace(
-            /\s+-\s+/g,
-            "\n- "
-        );
-
-        text = text.replace(
-            /\s+\*\s+/g,
-            "\n* "
-        );
-
-        text = text.replace(
-            /\s+•\s+/g,
-            "\n• "
-        );
+        text = text.replace(/\s+-\s+/g, "\n- ");
+        text = text.replace(/\s+\*\s+/g, "\n* ");
+        text = text.replace(/\s+•\s+/g, "\n• ");
 
         return text
             .split("\n")
@@ -92,9 +77,7 @@ function StudyNotes() {
                             className="study-note-code"
                             key={`code-${index}`}
                         >
-                            <code>
-                                {codeLines.join("\n")}
-                            </code>
+                            <code>{codeLines.join("\n")}</code>
                         </pre>
                     );
 
@@ -132,8 +115,7 @@ function StudyNotes() {
                 trimmedLine.startsWith("*") ||
                 trimmedLine.startsWith("•");
 
-            const isNumbered =
-                /^\d+\.\s/.test(trimmedLine);
+            const isNumbered = /^\d+\.\s/.test(trimmedLine);
 
             if (isHeading) {
                 elements.push(
@@ -155,12 +137,8 @@ function StudyNotes() {
                         key={`bullet-${index}`}
                     >
                         <span>•</span>
-
                         <p>
-                            {trimmedLine.replace(
-                                /^[-*•]\s*/,
-                                ""
-                            )}
+                            {trimmedLine.replace(/^[-*•]\s*/, "")}
                         </p>
                     </div>
                 );
@@ -197,9 +175,7 @@ function StudyNotes() {
                     className="study-note-code"
                     key="final-code"
                 >
-                    <code>
-                        {codeLines.join("\n")}
-                    </code>
+                    <code>{codeLines.join("\n")}</code>
                 </pre>
             );
         }
@@ -213,7 +189,9 @@ function StudyNotes() {
         return `${note.title}
 
 Topic: ${note.topic}
+
 Difficulty: ${note.difficulty}
+
 Note Length: ${note.noteLength}
 
 ${note.content}`;
@@ -224,27 +202,20 @@ ${note.content}`;
 
         const text = getDownloadText();
 
-        const blob = new Blob(
-            [text],
-            {
-                type: "text/plain;charset=utf-8"
-            }
-        );
+        const blob = new Blob([text], {
+            type: "text/plain;charset=utf-8"
+        });
 
         const url = URL.createObjectURL(blob);
-
         const link = document.createElement("a");
 
         link.href = url;
-
         link.download = `${note.topic
             .replace(/[^a-z0-9]/gi, "_")
             .toLowerCase()}_study_notes.txt`;
 
         document.body.appendChild(link);
-
         link.click();
-
         document.body.removeChild(link);
 
         URL.revokeObjectURL(url);
@@ -265,9 +236,7 @@ ${note.content}`;
         const token = localStorage.getItem("token");
 
         if (!token) {
-            setError(
-                "Please login to generate study notes."
-            );
+            setError("Please login to generate study notes.");
             return;
         }
 
@@ -276,53 +245,36 @@ ${note.content}`;
         setNote(null);
 
         try {
-            const response = await fetch(
-                "http://localhost:5000/api/study-notes/generate",
+            const response = await API.post(
+                "/study-notes/generate",
                 {
-                    method: "POST",
+                    topic: topic.trim(),
+                    difficulty,
+                    noteLength
+                },
+                {
                     headers: {
-                        "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        topic: topic.trim(),
-                        difficulty,
-                        noteLength
-                    })
+                    }
                 }
             );
 
-            const data = await response.json();
+            setNote(response.data.note);
+        } catch (error) {
+            console.error("Study Notes Error:", error);
 
-            if (response.status === 401) {
+            if (error.response?.status === 401) {
                 localStorage.removeItem("token");
                 localStorage.removeItem("user");
 
+                setError("Session expired. Please login again.");
+            } else {
                 setError(
-                    "Session expired. Please login again."
-                );
-
-                return;
-            }
-
-            if (!response.ok) {
-                throw new Error(
-                    data.message ||
-                    "Failed to generate study notes."
+                    error.response?.data?.message ||
+                    error.message ||
+                    "Something went wrong."
                 );
             }
-
-            setNote(data.note);
-        } catch (error) {
-            console.error(
-                "Study Notes Error:",
-                error
-            );
-
-            setError(
-                error.message ||
-                "Something went wrong."
-            );
         } finally {
             setLoading(false);
         }
@@ -333,7 +285,6 @@ ${note.content}`;
             <div className="study-notes-container">
                 <div className="study-notes-header">
                     <h1>🤖 AI Study Notes</h1>
-
                     <p>
                         Generate simple and personalized
                         study notes using AI.
@@ -354,9 +305,7 @@ ${note.content}`;
                             type="text"
                             placeholder="e.g. JavaScript Promises"
                             value={topic}
-                            onChange={(e) =>
-                                setTopic(e.target.value)
-                            }
+                            onChange={(e) => setTopic(e.target.value)}
                         />
                     </div>
 
@@ -370,22 +319,12 @@ ${note.content}`;
                                 id="difficulty"
                                 value={difficulty}
                                 onChange={(e) =>
-                                    setDifficulty(
-                                        e.target.value
-                                    )
+                                    setDifficulty(e.target.value)
                                 }
                             >
-                                <option value="Easy">
-                                    Easy
-                                </option>
-
-                                <option value="Medium">
-                                    Medium
-                                </option>
-
-                                <option value="Hard">
-                                    Hard
-                                </option>
+                                <option value="Easy">Easy</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Hard">Hard</option>
                             </select>
                         </div>
 
@@ -398,22 +337,12 @@ ${note.content}`;
                                 id="noteLength"
                                 value={noteLength}
                                 onChange={(e) =>
-                                    setNoteLength(
-                                        e.target.value
-                                    )
+                                    setNoteLength(e.target.value)
                                 }
                             >
-                                <option value="Short">
-                                    Short
-                                </option>
-
-                                <option value="Medium">
-                                    Medium
-                                </option>
-
-                                <option value="Detailed">
-                                    Detailed
-                                </option>
+                                <option value="Short">Short</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Detailed">Detailed</option>
                             </select>
                         </div>
                     </div>
